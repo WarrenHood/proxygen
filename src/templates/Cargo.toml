@@ -1,0 +1,25 @@
+[package]
+name = "{{ package_name }}"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libc = "0.2.149"
+winapi = { version = "0.3.9", features = [
+    "minwindef",
+    "libloaderapi",
+    "processthreadsapi",
+    "consoleapi",
+    "processenv",
+    "winbase",
+    "winuser",
+    "tlhelp32",
+    "handleapi",
+] }
+
+
+[lib]
+name = "{{ target_dll_name }}"
+crate-type = ["cdylib"]
