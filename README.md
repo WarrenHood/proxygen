@@ -53,3 +53,14 @@ And then update your exports by running this in the root of the project before b
 ```bash
 proxify update .
 ```
+
+Build the DLL using Rust nightly:
+
+```bash
+cargo +nightly build --release
+```
+
+Next, rename the original DLL and add an underscore to the end.
+Copy the dll from the target folder into the same folder as the original DLL.
+
+Run the program and you should see a console appear. Anything you send to stdout or stderr will appear in that console.
