@@ -10,6 +10,7 @@ mod proxied_exports;
 pub use intercepted_exports::*;
 pub use proxied_exports::*;
 
+use export_indices::TOTAL_EXPORTS;
 use orig_exports::load_dll_funcs;
 use std::arch::x86_64::_mm_pause;
 use std::ffi::OsString;
@@ -39,7 +40,7 @@ static mut ORIG_DLL_HANDLE: Option<HMODULE> = None;
 
 // Original funcs
 #[no_mangle]
-pub static mut ORIGINAL_FUNCS: [FARPROC; 1069] = [std::ptr::null_mut(); 1069];
+pub static mut ORIGINAL_FUNCS: [FARPROC; TOTAL_EXPORTS] = [std::ptr::null_mut(); TOTAL_EXPORTS];
 #[no_mangle]
 pub static mut ORIG_FUNCS_PTR: *const FARPROC = std::ptr::null_mut();
 

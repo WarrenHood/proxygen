@@ -48,6 +48,7 @@ impl ProxyTemplates {
             .trim_start()
             .into();
         ctx.insert("export_indices", &export_indices);
+        ctx.insert("total_exports", &exports.len());
         Ok(self.tera.render("export_indices.rs", &ctx)?)
     }
 
