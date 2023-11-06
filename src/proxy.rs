@@ -109,7 +109,7 @@ pub unsafe extern "C" fn {0}() {{
                     export_name
                 )
             })
-            .fold(String::new(), |acc, x| acc + "\n    " + &x)
+            .fold(String::new(), |acc, x| acc + "\n" + &x)
             .trim_start()
             .into();
         ctx.insert("proxy_exports", &proxy_exports);
