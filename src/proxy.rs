@@ -155,7 +155,14 @@ pub fn create_proxy_project(
 
     let proxy_gen = ProxyTemplates::new()?;
 
-    let src_cargo_toml = proxy_gen.get_cargo_toml(package_name, dll_name.replace(".dll", ""))?;
+    if dll_name.contains('-') {
+        eprintln!(
+            "Detected hyphens in DLL name - the generated project will use underscores instead."
+        );
+    }
+
+    let src_cargo_toml =
+        proxy_gen.get_cargo_toml(package_name, dll_name.replace(".dll", "").replace('-', "_"))?;
     let src_export_indices = proxy_gen.get_export_indices(exports)?;
     let src_intercepted_exports = proxy_gen.get_intercepted_exports()?;
     let src_lib = proxy_gen.get_lib(package_name)?;
