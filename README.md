@@ -1,4 +1,4 @@
-# Proxify
+# proxyify
 
 A DLL proxy generator written in Rust. Easily proxy any DLL.
 
@@ -13,7 +13,7 @@ Features:
 ```
 A DLL export dumper and proxy generator
 
-Usage: proxify <COMMAND>
+Usage: proxyify <COMMAND>
 
 Commands:
   dump-exports  Prints out the exported functions from a given PE file
@@ -32,7 +32,7 @@ Note: Generated projects need to be built with nightly Rust.
 ## Example usage
 
 ```bash
-proxify generate path/to/some_library.dll my_some_library_proxy
+proxyify generate path/to/some_library.dll my_some_library_proxy
 ```
 
 And just like that, you have a ready to compile DLL proxy Rust project.
@@ -51,7 +51,7 @@ pub extern "C" fn some_dll_export(x: u64, y: u64) -> u64 {
 
 And then update your exports by running this in the root of the project before building:
 ```bash
-proxify update .
+proxyify update .
 ```
 
 Build the DLL using Rust nightly:
