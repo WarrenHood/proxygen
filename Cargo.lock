@@ -621,8 +621,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "proxyify"
-version = "0.3.0"
+name = "proxygen"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
