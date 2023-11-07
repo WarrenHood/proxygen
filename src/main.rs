@@ -59,7 +59,7 @@ fn main() -> Result<()> {
                 .expect("Expected path to end with a file name")
                 .to_str()
             {
-                proxy::create_proxy_project(&exports, dll_name, &project_dir.canonicalize()?)?;
+                proxy::create_proxy_project(&exports, dll_name, &project_dir)?;
             } else {
                 return Err(anyhow::anyhow!("Failed to get dll name from path"));
             }
