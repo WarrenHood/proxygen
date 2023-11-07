@@ -101,12 +101,14 @@ impl ProxyTemplates {
 #[naked]
 pub unsafe extern "C" fn {0}() {{
     asm!(
-        "call wait_dll_proxy_init",
-        "mov rax, qword ptr [rip + ORIG_FUNCS_PTR]",
+        "call {{wait_dll_proxy_init}}",
+        "mov rax, qword ptr [rip + {{ORIG_FUNCS_PTR}}]",
         "add rax, {{orig_index}} * 8",
         "mov rax, qword ptr [rax]",
         "push rax",
         "ret",
+        wait_dll_proxy_init = sym wait_dll_proxy_init,
+        ORIG_FUNCS_PTR = sym ORIG_FUNCS_PTR,
         orig_index = const Index_{0},
         options(noreturn)
     );
@@ -117,12 +119,14 @@ pub unsafe extern "C" fn {0}() {{
 #[naked]
 pub unsafe extern "C" fn {0}() {{
     asm!(
-        "call wait_dll_proxy_init",
-        "mov eax, dword ptr [ORIG_FUNCS_PTR]",
+        "call {{wait_dll_proxy_init}}",
+        "mov eax, dword ptr [{{ORIG_FUNCS_PTR}}]",
         "add eax, {{orig_index}} * 4",
         "mov eax, dword ptr [eax]",
         "push eax",
         "ret",
+        wait_dll_proxy_init = sym wait_dll_proxy_init,
+        ORIG_FUNCS_PTR = sym ORIG_FUNCS_PTR,
         orig_index = const Index_{0},
         options(noreturn)
     );
