@@ -1,6 +1,10 @@
 use anyhow::{Ok, Result};
 use regex::Regex;
-use std::{path::PathBuf, process::Command};
+use std::{
+    collections::{BTreeSet, HashSet},
+    path::PathBuf,
+    process::Command,
+};
 use tera::{Context, Tera};
 
 const CARGO_TEMPLATE: &str = include_str!("templates/Cargo");
@@ -38,7 +42,7 @@ impl ProxyTemplates {
         Ok(self.tera.render("Cargo.toml", &ctx)?)
     }
 
-    pub fn get_export_indices(&self, exports: &Vec<String>) -> Result<String> {
+    pub fn get_export_indices(&self, exports: &BTreeSet<String>) -> Result<String> {
         let mut ctx = Context::new();
         let export_indices: String = exports
             .iter()
@@ -64,7 +68,7 @@ impl ProxyTemplates {
         Ok(self.tera.render("intercepted_exports.rs", &ctx)?)
     }
 
-    pub fn get_orig_exports(&self, exports: &Vec<String>) -> Result<String> {
+    pub fn get_orig_exports(&self, exports: &BTreeSet<String>) -> Result<String> {
         let mut ctx = Context::new();
         let dll_exports: String = exports
             .iter()
@@ -83,13 +87,13 @@ impl ProxyTemplates {
 
     pub fn get_proxied_exports(
         &self,
-        exports: &Vec<String>,
-        exclusions: &Vec<String>,
+        exports: &BTreeSet<String>,
+        exclusions: &HashSet<String>,
     ) -> Result<String> {
         let mut ctx = Context::new();
         let proxy_exports: String = exports
-            .iter()
-            .filter(|x| !exclusions.contains(x))
+            .into_iter()
+            .filter(|x| !exclusions.contains(*x))
             .map(|export_name| {
                 format!(
                     r#"#[cfg(target_arch="x86_64")]
@@ -137,7 +141,7 @@ pub unsafe extern "C" fn {0}() {{
 
 /// Creates a new proxy DLL rust project
 pub fn create_proxy_project(
-    exports: &Vec<String>,
+    exports: &BTreeSet<String>,
     dll_name: impl Into<String>,
     out_dir: &PathBuf,
 ) -> Result<()> {
@@ -184,7 +188,7 @@ pub fn create_proxy_project(
     let src_intercepted_exports = proxy_gen.get_intercepted_exports()?;
     let src_lib = proxy_gen.get_lib(package_name)?;
     let src_orig_exports = proxy_gen.get_orig_exports(exports)?;
-    let src_proxied_exports = proxy_gen.get_proxied_exports(exports, &vec![])?;
+    let src_proxied_exports = proxy_gen.get_proxied_exports(exports, &HashSet::new())?;
 
     std::fs::write(out_dir.join("Cargo.toml"), src_cargo_toml)?;
     std::fs::write(
@@ -214,7 +218,7 @@ pub fn create_proxy_project(
 }
 
 /// Updates an existing proxy DLL rust project
-pub fn update_proxy_project(exports: &Vec<String>, out_dir: &PathBuf) -> Result<()> {
+pub fn update_proxy_project(exports: &BTreeSet<String>, out_dir: &PathBuf) -> Result<()> {
     if !out_dir.exists() {
         return Err(anyhow::anyhow!(
             "Folder {} doesn't exist. Consider creating a new proxy project instead. Aborting",
@@ -239,9 +243,9 @@ pub fn update_proxy_project(exports: &Vec<String>, out_dir: &PathBuf) -> Result<
         .expect("Unable to detect package name");
 
     // Existing intercepted exports
-    let mut intercepted_exports: Vec<String> = Vec::new();
+    let mut intercepted_exports: HashSet<String> = HashSet::new();
     // All exports, ie. existing ones + new ones
-    let mut all_exports: Vec<String> = Vec::new();
+    let mut all_exports: BTreeSet<String> = BTreeSet::new();
 
     // Get intercepted exports from src/intercepted_exports.rs
     let exports_re = Regex::new(r"pub extern .* fn (.+)\(")?;
@@ -252,7 +256,7 @@ pub fn update_proxy_project(exports: &Vec<String>, out_dir: &PathBuf) -> Result<
             let captures = exports_re.captures(line);
             if let Some(captures) = captures {
                 let export_name = captures.get(1).unwrap().as_str().trim();
-                intercepted_exports.push(export_name.into());
+                intercepted_exports.insert(export_name.into());
                 println!("Detected intercepted export: {}", export_name);
             }
         }
@@ -266,20 +270,15 @@ pub fn update_proxy_project(exports: &Vec<String>, out_dir: &PathBuf) -> Result<
             let captures = exports_index_re.captures(line);
             if let Some(captures) = captures {
                 let export_name = captures.get(1).unwrap().as_str().trim();
-                all_exports.push(export_name.into());
+                all_exports.insert(export_name.into());
             }
         }
     }
 
     // Add on the new exports that aren't already in all exports
     for export in exports.iter() {
-        if !all_exports.contains(export) {
-            all_exports.push(export.trim().into());
-        }
+        all_exports.insert(export.trim().into());
     }
-
-    // And finally, make sure the exports are sorted
-    all_exports.sort();
 
     let proxy_gen = ProxyTemplates::new()?;
 

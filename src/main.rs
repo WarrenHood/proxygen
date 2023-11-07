@@ -4,7 +4,7 @@ mod proxy;
 use crate::exports::get_exports;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
+use std::{collections::BTreeSet, path::PathBuf};
 
 /// A DLL export dumper and proxy generator
 #[derive(Parser)]
@@ -36,7 +36,7 @@ enum Commands {
         /// Path to the proxy project into which new DLL exports should be merged.
         project_dir: PathBuf,
     },
-    /// Updates an exisitng DLL proxy project's exports based on the intercepted exports 
+    /// Updates an exisitng DLL proxy project's exports based on the intercepted exports
     Update {
         /// Path to the proxy project to update. The original DLL is expected to have an underscore suffix
         project_dir: PathBuf,
@@ -69,7 +69,7 @@ fn main() -> Result<()> {
             proxy::update_proxy_project(&exports, &project_dir.canonicalize()?)?;
         }
         Commands::Update { project_dir } => {
-            proxy::update_proxy_project(&Vec::new(), &project_dir.canonicalize()?)?;
+            proxy::update_proxy_project(&BTreeSet::new(), &project_dir.canonicalize()?)?;
         }
     }
 
