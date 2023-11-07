@@ -2,9 +2,9 @@
 name = "proxyify"
 keywords = ["dll", "proxy", "hacking"]
 categories = ["command-line-utilities", "development-tools"]
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
-description = "A DLL proxy generator written in Rust. Note. I have renamed this crate to proxygen. Contact me if you'd like this crate name"
+description = "A DLL proxy generator written in Rust. Note: I have renamed this crate to proxygen. Contact me if you'd like this crate name"
 readme = "README.md"
 include = ["/src/**/*", "/LICENSE-MIT"]
 license = "MIT"
