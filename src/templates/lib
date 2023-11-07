@@ -40,9 +40,9 @@ static mut ORIG_DLL_HANDLE: Option<HMODULE> = None;
 
 // Original funcs
 #[no_mangle]
-pub static mut ORIGINAL_FUNCS: [FARPROC; TOTAL_EXPORTS] = [std::ptr::null_mut(); TOTAL_EXPORTS];
+static mut ORIGINAL_FUNCS: [FARPROC; TOTAL_EXPORTS] = [std::ptr::null_mut(); TOTAL_EXPORTS];
 #[no_mangle]
-pub static mut ORIG_FUNCS_PTR: *const FARPROC = std::ptr::null_mut();
+static mut ORIG_FUNCS_PTR: *const FARPROC = std::ptr::null_mut();
 
 /// Indicates once we are ready to accept incoming calls to proxied functions
 static mut {{ package_name }}_READY: bool = false;
@@ -150,7 +150,7 @@ unsafe extern "system" fn init(_: *mut c_void) -> u32 {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn wait_init() {
+pub unsafe extern "C" fn wait_hoodapi_init() {
     // Spin a little while we wait for all functions to fully load
     // NOTE TO SELF: DO NO PRINT STUFF IN HERE
     while !{{ package_name }}_READY {

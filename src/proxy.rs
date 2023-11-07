@@ -96,7 +96,7 @@ impl ProxyTemplates {
 #[naked]
 pub unsafe extern "C" fn {0}() {{
     asm!(
-        "call wait_init",
+        "call wait_hoodapi_init",
         "lea rax, qword ptr [rip + ORIG_FUNCS_PTR]",
         "mov rax, [rax]",
         "add rax, {{orig_index}} * 8",

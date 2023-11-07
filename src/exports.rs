@@ -8,7 +8,13 @@ pub fn get_exports(pe_file: &PathBuf) -> Result<Vec<String>> {
     let mut results: Vec<String> = export_directory
         .get_export_map(&pe)?
         .iter()
-        .map(|(func, _)| String::from(*func))
+        .map(|(func, _)| String::from(*func).trim().to_string())
+        .filter(|f| {
+            f != "DllMain"
+                && f != "ORIGINAL_FUNCS"
+                && f != "ORIG_FUNCS_PTR"
+                && f != "wait_hoodapi_init"
+        })
         .collect();
     results.sort();
     Ok(results)
