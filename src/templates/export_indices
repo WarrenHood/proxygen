@@ -1,4 +1,4 @@
-// After making changes in this file, you should run `proxyify update .`` in the root of this project to update exports
+// After making changes in this file, you should run `proxygen update .`` in the root of this project to update exports
 
 #![allow(non_upper_case_globals)]
 
