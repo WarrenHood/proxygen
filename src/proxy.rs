@@ -3,12 +3,12 @@ use regex::Regex;
 use std::{path::PathBuf, process::Command};
 use tera::{Context, Tera};
 
-const CARGO_TEMPLATE: &str = include_str!("templates/Cargo.toml");
-const EXPORT_INDICES_TEMPLATE: &str = include_str!("templates/export_indices.rs");
-const INTERCEPTED_EXPORTS_TEMPLATE: &str = include_str!("templates/intercepted_exports.rs");
-const LIB_TEMPLATE: &str = include_str!("templates/lib.rs");
-const ORIG_EXPORTS_TEMPLATE: &str = include_str!("templates/orig_exports.rs");
-const PROXIED_EXPORTS_TEMPLATE: &str = include_str!("templates/proxied_exports.rs");
+const CARGO_TEMPLATE: &str = include_str!("templates/Cargo");
+const EXPORT_INDICES_TEMPLATE: &str = include_str!("templates/export_indices");
+const INTERCEPTED_EXPORTS_TEMPLATE: &str = include_str!("templates/intercepted_exports");
+const LIB_TEMPLATE: &str = include_str!("templates/lib");
+const ORIG_EXPORTS_TEMPLATE: &str = include_str!("templates/orig_exports");
+const PROXIED_EXPORTS_TEMPLATE: &str = include_str!("templates/proxied_exports");
 
 struct ProxyTemplates {
     tera: Tera,
