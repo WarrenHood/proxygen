@@ -14,7 +14,10 @@ pub use proxied_exports::*;
 
 use export_indices::TOTAL_EXPORTS;
 use orig_exports::load_dll_funcs;
+#[cfg(target_arch="x86_64")]
 use std::arch::x86_64::_mm_pause;
+#[cfg(target_arch="x86")]
+use std::arch::x86::_mm_pause;
 use std::ffi::OsString;
 use std::os::windows::prelude::{AsRawHandle, OsStringExt};
 use winapi::ctypes::c_void;
@@ -119,7 +122,6 @@ unsafe extern "system" fn init(_: *mut c_void) -> u32 {
     let err_handle = stderr.as_raw_handle();
     let err_handle = err_handle as *mut c_void;
     SetStdHandle(STD_ERROR_HANDLE, err_handle);
-    init_dlc_data();
     if let Some(dll_path) = get_dll_path() {
         println!("This DLL path: {}", &dll_path);
         let orig_dll_name = format!("{}_", &dll_path);
@@ -153,9 +155,4 @@ pub unsafe extern "C" fn wait_dll_proxy_init() {
     while !{{ package_name }}_READY {
         _mm_pause();
     }
-}
-
-/// This should load up the DLC IDs to spoof
-fn init_dlc_data() {
-    println!("In init_dlc_data");
 }
