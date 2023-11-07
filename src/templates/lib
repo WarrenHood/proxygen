@@ -150,7 +150,7 @@ unsafe extern "system" fn init(_: *mut c_void) -> u32 {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn wait_hoodapi_init() {
+pub unsafe extern "C" fn wait_dll_proxy_init() {
     // Spin a little while we wait for all functions to fully load
     // NOTE TO SELF: DO NO PRINT STUFF IN HERE
     while !{{ package_name }}_READY {

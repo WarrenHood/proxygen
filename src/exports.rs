@@ -13,7 +13,7 @@ pub fn get_exports(pe_file: &PathBuf) -> Result<Vec<String>> {
             f != "DllMain"
                 && f != "ORIGINAL_FUNCS"
                 && f != "ORIG_FUNCS_PTR"
-                && f != "wait_hoodapi_init"
+                && f != "wait_dll_proxy_init"
         })
         .collect();
     results.sort();
