@@ -204,6 +204,16 @@ pub fn update_proxy_project(exports: &Vec<String>, out_dir: &PathBuf) -> Result<
             out_dir.to_string_lossy()
         ));
     }
+    if !out_dir.join("Cargo.toml").exists() {
+        return Err(anyhow::anyhow!(
+            "Directory '{}' doesn't seem to contain a Cargo.toml file. Aborting",
+            out_dir
+                .canonicalize()
+                .as_deref()
+                .unwrap_or(out_dir)
+                .to_string_lossy()
+        ));
+    }
 
     let package_name = out_dir
         .file_name()
