@@ -22,3 +22,4 @@ tera = "1.19.1"
 
 [[bin]]
 name = "proxify"
+path = "src/main.rs"
