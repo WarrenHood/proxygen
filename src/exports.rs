@@ -9,8 +9,12 @@ pub fn get_exports(pe_file: &PathBuf) -> Result<BTreeSet<String>> {
     let export_directory = ExportDirectory::parse(&pe)?;
     Ok(export_directory
         .get_export_map(&pe)?
-        .iter()
-        .map(|(func, _)| String::from(*func).trim().to_string())
+        .into_iter()
+        .map(|(func, _)| String::from(func).trim().to_string())
+        .map(|f| match f.split_once('@') {
+            Some((func_name, _)) => func_name.into(),
+            None => f,
+        })
         .filter(|f| {
             f != "DllMain"
                 && f != "ORIGINAL_FUNCS"
