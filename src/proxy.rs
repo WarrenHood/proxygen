@@ -92,21 +92,38 @@ impl ProxyTemplates {
             .filter(|x| !exclusions.contains(x))
             .map(|export_name| {
                 format!(
-                    r#"#[no_mangle]
+                    r#"#[cfg(target_arch="x86_64")]
+#[no_mangle]
 #[naked]
 pub unsafe extern "C" fn {0}() {{
     asm!(
         "call wait_dll_proxy_init",
-        "lea rax, qword ptr [rip + ORIG_FUNCS_PTR]",
-        "mov rax, [rax]",
+        "mov rax, qword ptr [rip + ORIG_FUNCS_PTR]",
         "add rax, {{orig_index}} * 8",
-        "mov rax, [rax]",
+        "mov rax, qword ptr [rax]",
         "push rax",
         "ret",
         orig_index = const Index_{0},
         options(noreturn)
     );
-}}"#,
+}}
+
+#[cfg(target_arch="x86")]
+#[no_mangle]
+#[naked]
+pub unsafe extern "C" fn {0}() {{
+    asm!(
+        "call wait_dll_proxy_init",
+        "mov eax, dword ptr [ORIG_FUNCS_PTR]",
+        "add eax, {{orig_index}} * 4",
+        "mov eax, dword ptr [eax]",
+        "push eax",
+        "ret",
+        orig_index = const Index_{0},
+        options(noreturn)
+    );
+}}
+"#,
                     export_name
                 )
             })
