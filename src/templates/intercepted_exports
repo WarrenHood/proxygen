@@ -1,3 +1,10 @@
-// Intercepted/replaced functions
-
-use libc::c_void;
+// Intercepted/replaced functions go here
+// Remember to run `proxygen update .` in the root of this project every time you add or remove an export here
+//
+// For example:
+//
+// #[no_mangle]
+// pub extern "C" fn some_dll_export(x: u64, y: u64) -> u64 {
+//     println!("Proxy some_dll_export function called...");
+//     5
+// }

@@ -1,5 +1,6 @@
 #![feature(naked_functions)]
 #![allow(named_asm_labels)]
+#![allow(non_snake_case)]
 #![feature(asm_const)]
 
 mod export_indices;
@@ -7,6 +8,7 @@ mod intercepted_exports;
 mod orig_exports;
 mod proxied_exports;
 
+#[allow(unused_imports)]
 pub use intercepted_exports::*;
 pub use proxied_exports::*;
 
@@ -16,22 +18,18 @@ use std::arch::x86_64::_mm_pause;
 use std::ffi::OsString;
 use std::os::windows::prelude::{AsRawHandle, OsStringExt};
 use winapi::ctypes::c_void;
-use winapi::shared::minwindef::{DWORD, FARPROC, HMODULE};
+use winapi::shared::minwindef::{FARPROC, HMODULE};
 use winapi::shared::ntdef::LPCSTR;
 use winapi::um::consoleapi::AllocConsole;
-use winapi::um::handleapi::CloseHandle;
 use winapi::um::libloaderapi::{
     DisableThreadLibraryCalls, FreeLibrary, GetModuleFileNameW, LoadLibraryA,
 };
 use winapi::um::processenv::SetStdHandle;
 use winapi::um::processthreadsapi::{
-    CreateThread, GetCurrentProcess, OpenThread, ResumeThread, SuspendThread, TerminateProcess,
-};
-use winapi::um::tlhelp32::{
-    CreateToolhelp32Snapshot, Thread32First, Thread32Next, TH32CS_SNAPTHREAD, THREADENTRY32,
+    CreateThread, GetCurrentProcess, TerminateProcess,
 };
 use winapi::um::winbase::{STD_ERROR_HANDLE, STD_OUTPUT_HANDLE};
-use winapi::um::winnt::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH, THREAD_ALL_ACCESS};
+use winapi::um::winnt::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH};
 use winapi::um::winuser::{MessageBoxA, MB_OK};
 
 // Static handles
@@ -53,7 +51,6 @@ pub unsafe extern "stdcall" fn DllMain(module: HMODULE, reason: u32, _res: *cons
     THIS_HANDLE = Some(module);
 
     if reason == DLL_PROCESS_ATTACH {
-        // suspend_all_threads(GetCurrentProcessId(), GetCurrentThreadId());
         CreateThread(
             std::ptr::null_mut(),
             0,
