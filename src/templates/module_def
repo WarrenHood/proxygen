@@ -1,0 +1,3 @@
+LIBRARY "{{ dll_name }}"
+EXPORTS
+{{ exports }}

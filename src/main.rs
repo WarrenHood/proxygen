@@ -49,7 +49,7 @@ fn main() -> Result<()> {
         Commands::DumpExports { dll } => {
             let exports = get_exports(dll)?;
             for export in exports.iter() {
-                println!("{}", export);
+                println!("{}", export.original);
             }
         }
         Commands::Generate { dll, project_dir } => {
