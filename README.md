@@ -1,3 +1,4 @@
+![Crates.io](https://img.shields.io/crates/v/proxygen)
 # proxygen
 
 A DLL proxy generator written in Rust. Easily proxy any DLL.
