@@ -218,17 +218,17 @@ pub fn create_proxy_project(
     let src_lib = proxy_gen.get_lib(package_name)?;
     let src_orig_exports = proxy_gen.get_orig_exports(exports)?;
     let src_proxied_exports = proxy_gen.get_proxied_exports(exports, &HashSet::new())?;
-    let src_module_def = proxy_gen.get_module_def(exports, &dll_name.replace('-', "_"))?;
+    // let src_module_def = proxy_gen.get_module_def(exports, &dll_name.replace('-', "_"))?;
 
     std::fs::write(out_dir.join("Cargo.toml"), src_cargo_toml)?;
     std::fs::write(
         out_dir.join("rust-toolchain.toml"),
         "[toolchain]\nchannel = \"nightly-2023-11-05\"",
     )?;
-    std::fs::write(
-        out_dir.join("build.rs"),
-        "fn main() {\n    println!(\"cargo:rustc-link-arg=/DEF:module.def\");\n}",
-    )?;
+    // std::fs::write(
+    //     out_dir.join("build.rs"),
+    //     "fn main() {\n    println!(\"cargo:rustc-link-arg=/DEF:module.def\");\n}",
+    // )?;
     std::fs::write(
         out_dir.join("src").join("export_indices.rs"),
         src_export_indices,
@@ -246,7 +246,7 @@ pub fn create_proxy_project(
         out_dir.join("src").join("proxied_exports.rs"),
         src_proxied_exports,
     )?;
-    std::fs::write(out_dir.join("module.def"), src_module_def)?;
+    // std::fs::write(out_dir.join("module.def"), src_module_def)?;
 
     println!(
         "Successfully created new DLL proxy project '{}' at {}",
