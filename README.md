@@ -45,8 +45,6 @@ Options:
   -V, --version  Print version
 ```
 
-Note: Generated projects need to be built with nightly Rust.
-
 ## Toolchains and building
 
 You need to build this project with nightly rust since we rely on naked functions.
