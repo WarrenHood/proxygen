@@ -150,7 +150,7 @@ proxygen update .
 Build the DLL:
 
 ```bash
-cargo --release
+cargo build --release
 ```
 
 Next, rename the original DLL and add an underscore to the end.
