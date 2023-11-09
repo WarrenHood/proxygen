@@ -4,10 +4,19 @@
 A DLL proxy generator written in Rust. Easily proxy any DLL.
 
 Features:
-- Dump exported DLL function names
-- Generate proxy DLL Rust project
+- Generate a proxy DLL Rust project
 - Merge new DLL exports into an existing proxy DLL project
-- Update an existing DLL project's exports (automatically unproxies intercepted functions)
+- Update an existing DLL project's exports (removes automatically generated proxies which have been intercepted)
+
+## Editing the generated project
+
+You generally just need to edit `src/intercepted_exports.rs`.
+
+Just add whatever functions you want to intercept to `src/intercepted_exports.rs` (make sure to match the signature in `src/proxied_exports`).
+
+Run `proxygen update .` in the project root to update automatically generated exports.
+
+Then build the project.
 
 ## Usage
 
