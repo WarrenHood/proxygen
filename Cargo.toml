@@ -1,11 +1,11 @@
 [workspace]
 resolver = "2"
-members = ["proxygen"]
-default-members = ["proxygen"]
+members = ["proxygen", "proxygen-macros", "tests"]
+default-members = ["proxygen", "proxygen-macros"]
 
 [workspace.package]
 authors = ["Warren Hood <nullbyte001@gmail.com>"]
-version = "0.3.1"
+version = "0.4.0"
 edition = "2021"
 description = "A DLL proxy generator written in Rust"
 license = "MIT"

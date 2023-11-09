@@ -1,0 +1,15 @@
+[package]
+name = "tests"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dev-dependencies]
+proxygen-macros = { path = "../proxygen-macros" }
+quote = "1.0.33"
+syn = { version = "2.0.39", features = ["extra-traits", "full"] }
+
+
+[[test]]
+name = "tests"
+path = "tests.rs"
