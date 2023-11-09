@@ -1,7 +1,7 @@
 mod exports;
 mod proxy;
 
-use crate::exports::get_exports;
+use crate::exports::DLLFile;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::{collections::BTreeSet, path::PathBuf};
@@ -47,26 +47,31 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     match &cli.command {
         Commands::DumpExports { dll } => {
-            let exports = get_exports(dll)?;
-            for export in exports.iter() {
+            let dll_file = DLLFile::new(dll)?;
+            for export in dll_file.get_exports()? {
                 println!("{}", export.original);
             }
         }
         Commands::Generate { dll, project_dir } => {
-            let exports = get_exports(dll)?;
+            let dll_file = DLLFile::new(dll)?;
             if let Some(dll_name) = dll
                 .file_name()
                 .expect("Expected path to end with a file name")
                 .to_str()
             {
-                proxy::create_proxy_project(&exports, dll_name, &project_dir)?;
+                proxy::create_proxy_project(
+                    &dll_file.get_exports()?,
+                    dll_name,
+                    &project_dir,
+                    dll_file.get_arch()?,
+                )?;
             } else {
                 return Err(anyhow::anyhow!("Failed to get dll name from path"));
             }
         }
         Commands::Merge { dll, project_dir } => {
-            let exports = get_exports(dll)?;
-            proxy::update_proxy_project(&exports, &project_dir.canonicalize()?)?;
+            let dll_file = DLLFile::new(dll)?;
+            proxy::update_proxy_project(&dll_file.get_exports()?, &project_dir.canonicalize()?)?;
         }
         Commands::Update { project_dir } => {
             proxy::update_proxy_project(&BTreeSet::new(), &project_dir.canonicalize()?)?;

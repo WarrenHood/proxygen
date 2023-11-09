@@ -1,5 +1,5 @@
-use anyhow::Result;
-use exe::{ExportDirectory, VecPE, PE};
+use anyhow::{Ok, Result};
+use exe::{ExportDirectory, VecPE, PE, Arch};
 use std::{collections::BTreeSet, path::PathBuf};
 
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord)]
@@ -27,20 +27,38 @@ fn clean_func_name(func_name: &str) -> String {
         .collect()
 }
 
-pub fn get_exports(pe_file: &PathBuf) -> Result<BTreeSet<ExportName>> {
-    println!("Getting exports for {}", pe_file.to_string_lossy());
-    let pe = VecPE::from_disk_file(pe_file)?;
-    println!("Detected arch: {:?}", pe.get_arch()?);
-    let export_directory = ExportDirectory::parse(&pe)?;
-    Ok(export_directory
-        .get_export_map(&pe)?
-        .into_iter()
-        .map(|(func, _)| ExportName::new(func))
-        .filter(|f| {
-            f.cleaned != "DllMain"
-                && f.cleaned != "ORIGINAL_FUNCS"
-                && f.cleaned != "ORIG_FUNCS_PTR"
-                && f.cleaned != "wait_dll_proxy_init"
+pub struct DLLFile {
+    path: PathBuf,
+    pe_file: VecPE,
+}
+
+impl DLLFile {
+    pub fn new(path: &PathBuf) -> Result<Self> {
+        let pe_file = VecPE::from_disk_file(path)?;
+        Ok(Self {
+            path: path.clone(),
+            pe_file: pe_file,
         })
-        .collect())
+    }
+
+    pub fn get_exports(&self) -> Result<BTreeSet<ExportName>> {
+        println!("Getting exports for {}", self.path.to_string_lossy());
+        println!("Detected arch: {:?}", self.pe_file.get_arch()?);
+        let export_directory = ExportDirectory::parse(&self.pe_file)?;
+        Ok(export_directory
+            .get_export_map(&self.pe_file)?
+            .into_iter()
+            .map(|(func, _)| ExportName::new(func))
+            .filter(|f| {
+                f.cleaned != "DllMain"
+                    && f.cleaned != "ORIGINAL_FUNCS"
+                    && f.cleaned != "ORIG_FUNCS_PTR"
+                    && f.cleaned != "wait_dll_proxy_init"
+            })
+            .collect())
+    }
+
+    pub fn get_arch(&self) -> Result<Arch> {
+        Ok(self.pe_file.get_arch()?)
+    }
 }

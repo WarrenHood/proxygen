@@ -1,4 +1,5 @@
 use anyhow::{Ok, Result};
+use exe::Arch;
 use regex::Regex;
 use std::{
     collections::{BTreeSet, HashSet},
@@ -91,22 +92,22 @@ impl ProxyTemplates {
         Ok(self.tera.render("orig_exports.rs", &ctx)?)
     }
 
-    pub fn get_module_def(
-        &self,
-        exports: &BTreeSet<ExportName>,
-        dll_name: impl Into<String>,
-    ) -> Result<String> {
-        let mut ctx = Context::new();
-        let def_exports: String = exports
-            .iter()
-            .map(|export_name| format!(r#"{}={}"#, export_name.original, export_name.cleaned))
-            .fold(String::new(), |acc, x| acc + "\n" + &x)
-            .trim_start()
-            .into();
-        ctx.insert("exports", &def_exports);
-        ctx.insert("dll_name", &dll_name.into());
-        Ok(self.tera.render("module.def", &ctx)?)
-    }
+    // pub fn get_module_def(
+    //     &self,
+    //     exports: &BTreeSet<ExportName>,
+    //     dll_name: impl Into<String>,
+    // ) -> Result<String> {
+    //     let mut ctx = Context::new();
+    //     let def_exports: String = exports
+    //         .iter()
+    //         .map(|export_name| format!(r#"{}={}"#, export_name.original, export_name.cleaned))
+    //         .fold(String::new(), |acc, x| acc + "\n" + &x)
+    //         .trim_start()
+    //         .into();
+    //     ctx.insert("exports", &def_exports);
+    //     ctx.insert("dll_name", &dll_name.into());
+    //     Ok(self.tera.render("module.def", &ctx)?)
+    // }
 
     pub fn get_proxied_exports(
         &self,
@@ -122,6 +123,7 @@ impl ProxyTemplates {
                     r#"#[cfg(target_arch="x86_64")]
 #[no_mangle]
 #[naked]
+#[export_name="{1}"]
 pub unsafe extern "C" fn {0}() {{
     asm!(
         "call {{wait_dll_proxy_init}}",
@@ -140,6 +142,7 @@ pub unsafe extern "C" fn {0}() {{
 #[cfg(target_arch="x86")]
 #[no_mangle]
 #[naked]
+#[export_name="{1}"]
 pub unsafe extern "C" fn {0}() {{
     asm!(
         "call {{wait_dll_proxy_init}}",
@@ -155,7 +158,7 @@ pub unsafe extern "C" fn {0}() {{
     );
 }}
 "#,
-                    export_name.cleaned
+                    export_name.cleaned, export_name.original
                 )
             })
             .fold(String::new(), |acc, x| acc + "\n" + &x)
@@ -171,6 +174,7 @@ pub fn create_proxy_project(
     exports: &BTreeSet<ExportName>,
     dll_name: impl Into<String>,
     out_dir: &PathBuf,
+    arch: Arch,
 ) -> Result<()> {
     let dll_name: String = dll_name.into();
     if out_dir.exists() {
@@ -223,7 +227,8 @@ pub fn create_proxy_project(
     std::fs::write(out_dir.join("Cargo.toml"), src_cargo_toml)?;
     std::fs::write(
         out_dir.join("rust-toolchain.toml"),
-        "[toolchain]\nchannel = \"nightly-2023-11-05\"",
+        // "[toolchain]\nchannel = \"nightly-2023-11-05\"",
+        "[toolchain]\nchannel = \"nightly\"",
     )?;
     // std::fs::write(
     //     out_dir.join("build.rs"),
@@ -247,6 +252,25 @@ pub fn create_proxy_project(
         src_proxied_exports,
     )?;
     // std::fs::write(out_dir.join("module.def"), src_module_def)?;
+
+    // Let's also set the default toolchain based on the arch
+    let target = match arch {
+        Arch::X86 => "i686-pc-windows-gnu",
+        Arch::X64 => "x86_64-pc-windows-msvc",
+    };
+
+    // Set the default target based on the DLL's arch
+    println!(
+        "The generated project will use the {} target (can be changed in .cargo/config)",
+        target
+    );
+    if !out_dir.join(".cargo").exists() {
+        std::fs::create_dir(out_dir.join(".cargo"))?;
+    }
+    std::fs::write(
+        out_dir.join(".cargo").join("config"),
+        format!("[build]\ntarget = \"{}\"", target),
+    )?;
 
     println!(
         "Successfully created new DLL proxy project '{}' at {}",
@@ -288,12 +312,12 @@ pub fn update_proxy_project(exports: &BTreeSet<ExportName>, out_dir: &PathBuf) -
     let mut all_exports: BTreeSet<ExportName> = BTreeSet::new();
 
     // Get intercepted exports from src/intercepted_exports.rs
-    let exports_re = Regex::new(r"pub extern .* fn (.+)\(")?;
+    let exports_re = Regex::new(r"^pub.*extern.*fn\s+(.+)\(")?;
     if out_dir.join("src").join("intercepted_exports.rs").exists() {
         for line in
             std::fs::read_to_string(out_dir.join("src").join("intercepted_exports.rs"))?.lines()
         {
-            let captures = exports_re.captures(line);
+            let captures = exports_re.captures(line.trim());
             if let Some(captures) = captures {
                 let export_name = captures.get(1).unwrap().as_str().trim();
                 intercepted_exports.insert(export_name.into());
@@ -304,10 +328,10 @@ pub fn update_proxy_project(exports: &BTreeSet<ExportName>, out_dir: &PathBuf) -
 
     // Get existing exports from src/orig_exports
     let exports_index_re =
-        Regex::new(r#"load_dll_func\(Index_(.+)\s*,\s*dll_handle,\s*"(.+)"\)\s*;"#)?;
+        Regex::new(r#"^load_dll_func\(Index_(.+)\s*,\s*dll_handle,\s*"(.+)"\)\s*;"#)?;
     if out_dir.join("src").join("orig_exports.rs").exists() {
         for line in std::fs::read_to_string(out_dir.join("src").join("orig_exports.rs"))?.lines() {
-            let captures = exports_index_re.captures(line);
+            let captures = exports_index_re.captures(line.trim());
             if let Some(captures) = captures {
                 let cleaned = String::from(captures.get(1).unwrap().as_str().trim());
                 let original = String::from(captures.get(2).unwrap().as_str());

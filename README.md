@@ -30,6 +30,70 @@ Options:
 
 Note: Generated projects need to be built with nightly Rust.
 
+## Toolchains and building
+
+You need to build this project with nightly rust since we rely on naked functions.
+
+Note, there is a `toolchain.toml` file that sets the channel to `nightly` in the generated project.
+
+### Building in general
+
+In general, you can just run the following and build the project for whatever default target the project has.
+
+```bash
+cargo build --release
+```
+
+This will obviously require that you install the correct toolchain, and msys2 for i686 DLLs (see below).
+
+### Building for x86_64
+
+By default, 64-bit DLLs will be built with the `x86_64-pc-windows-msvc` target.
+
+If you'd like to build with the GNU toolchain instead, don't forget to [Install msys2](https://www.msys2.org/), update your path, and install `mingw-w64-x86_64-toolchain`.
+
+Then, just run:
+
+```bash
+cargo build --release --target=x86_64-pc-windows-gnu
+```
+
+### Building for i686
+
+There are some name mangling issues when building for `i686-pc-windows-msvc`, and you will probably get linking errors.
+
+So I suggest building for `i686-pc-windows-gnu` if you run into issues
+
+#### Setting up to build for `i686-pc-windows-gnu`
+
+Install the `nightly-i686-pc-windows-gnu` toolchain
+
+```bash
+rustup toolchain install nightly-i686-pc-windows-gnu
+```
+
+Add the `i686-pc-windows-gnu` target:
+
+```bash
+rustup target add i686-pc-windows-gnu
+```
+
+[Install msys2](https://www.msys2.org/).
+
+Add your msys2/mingw32/bin folder to your system path.
+
+Then, open up a mingw64 terminal, and install `mingw-w64-i686-toolchain`
+
+```bash
+pacman -S mingw-w64-i686-toolchain
+```
+
+Open a new terminal in your proxy project, and build it
+
+```bash
+cargo build --release --target=i686-pc-windows-gnu
+```
+
 ## Example usage
 
 ```bash
@@ -40,13 +104,26 @@ And just like that, you have a ready to compile DLL proxy Rust project.
 
 Then add some exports you want to replace to `intercepted_exports.rs`.
 
-Eg. Something like:
+Eg. you could intercept/proxy the `_SomeMangledFunctionName@12` function.
+Assuming it has a `void*` (pointer sized type) followed by an `int` (32-bits usually), and returns a boolean
+
+We can proxy it by adding the following to `intercepted_exports.rs`:
 
 ```rust
 #[no_mangle]
-pub extern "C" fn some_dll_export(x: u64, y: u64) -> u64 {
-    println!("Proxy some_dll_export function called...");
-    5
+#[export_name = "_SomeMangledFunctionName@12"]
+pub unsafe extern "C" fn SomeFunctionName(
+    some_arg_1: usize,
+    some_arg_2: u32,
+) -> bool {
+    let original_result: bool = std::mem::transmute::<FARPROC, fn(usize, u32) -> bool>(
+        ORIGINAL_FUNCS[Index_SomeFunctionName],
+    )(some_arg_1, some_arg_2);
+    println!(
+        "Proxied SomeFunctionName. Original result: {}. Returning true instead",
+        original_result
+    );
+    true
 }
 ```
 
@@ -55,10 +132,10 @@ And then update your exports by running this in the root of the project before b
 proxygen update .
 ```
 
-Build the DLL using Rust nightly:
+Build the DLL:
 
 ```bash
-cargo +nightly build --release
+cargo --release
 ```
 
 Next, rename the original DLL and add an underscore to the end.
