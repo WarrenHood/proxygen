@@ -2,7 +2,7 @@
 name = "proxygen"
 keywords = ["dll", "proxy", "hacking"]
 categories = ["command-line-utilities", "development-tools"]
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 description = "A DLL proxy generator written in Rust"
 readme = "README.md"
