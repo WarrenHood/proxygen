@@ -12,7 +12,7 @@ Features:
 
 You generally just need to edit `src/intercepted_exports.rs`.
 
-Just add whatever functions you want to intercept to `src/intercepted_exports.rs` (make sure to match the signature in `src/proxied_exports`).
+Just add whatever functions you want to intercept to `src/intercepted_exports.rs` (make sure to match the name in `src/proxied_exports`).
 
 Run `proxygen update .` in the project root to update automatically generated exports.
 
