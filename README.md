@@ -8,6 +8,14 @@ Features:
 - Merge new DLL exports into an existing proxy DLL project
 - Update an existing DLL project's exports (removes automatically generated proxies which have been intercepted)
 
+## Installing
+
+Assuming you have [installed Rust](https://rustup.rs/), just run:
+
+```bash
+cargo install proxygen
+```
+
 ## Editing the generated project
 
 You generally just need to edit `src/intercepted_exports.rs`.
