@@ -5,6 +5,7 @@ A DLL proxy generator written in Rust. Easily proxy any DLL.
 
 Features:
 - Generate a proxy DLL Rust project
+- Easily call the original function with the use of `#[proxy]`, `#[pre_hook]` and `#[post_hook]` macros
 - Merge new DLL exports into an existing proxy DLL project
 - Update an existing DLL project's exports (removes automatically generated proxies which have been intercepted)
 
@@ -25,6 +26,41 @@ Just add whatever functions you want to intercept to `src/intercepted_exports.rs
 Run `proxygen update .` in the project root to update automatically generated exports.
 
 Then build the project.
+
+## Macros/hooks
+
+```rust
+#[no_mangle]
+#[export_name="SomeFunction"]
+#[pre_hook]
+pub extern "C" fn SomeFunction(some_arg_1: usize, some_arg_2: u32) -> bool {
+    println!("Pre-hooked SomeFunction. Args: {}, {}", some_arg_1, some_arg_2);
+    // After all our code in this pre-hook runs, if we don't return, the original function will be called
+    // and its result will be returned
+}
+
+
+#[no_mangle]
+#[export_name="SomeFunction"]
+#[proxy]
+pub extern "C" fn SomeFunction(some_arg_1: usize, some_arg_2: u32) -> bool {
+    let orig_result = orig_func(some_arg_1, some_arg_2);
+    println!("Manually proxied SomeFunction. Args: {}, {}. Result: {}", some_arg_1, some_arg_2, orig_result);
+    // This is just a normal/manual proxy. It is up to us to return a value.
+    // Also note that the original function `orig_func` will note be run in this case unless we explicitly call it
+    true
+}
+
+
+#[no_mangle]
+#[export_name="SomeFunction"]
+#[post_hook]
+pub extern "C" fn SomeFunction(some_arg_1: usize, some_arg_2: u32) -> bool {
+    // `orig_func` got run just before our code. Its result is stored in `orig_result`
+    println!("In post-hook for SomeFunction. Args: {}, {}. Result: {}", some_arg_1, some_arg_2, orig_result);
+    // We could manually return something here if we didn't want `orig_result` returned
+}
+```
 
 ## Usage
 
