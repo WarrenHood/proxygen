@@ -6,6 +6,6 @@ use proxygen_macros::{proxy, pre_hook, post_hook};
 
 #[post_hook]
 #[no_mangle]
-pub fn ISteamApps_bIsDLCInstalled(steam_apps: usize, app_id: u32) -> bool {
+pub fn SomeTestFunction(steam_apps: usize, app_id: u32) -> bool {
     println!("This is a test!");
 }
