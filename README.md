@@ -47,7 +47,7 @@ pub extern "C" fn SomeFunction(some_arg_1: usize, some_arg_2: u32) -> bool {
     let orig_result = orig_func(some_arg_1, some_arg_2);
     println!("Manually proxied SomeFunction. Args: {}, {}. Result: {}", some_arg_1, some_arg_2, orig_result);
     // This is just a normal/manual proxy. It is up to us to return a value.
-    // Also note that the original function `orig_func` will note be run in this case unless we explicitly call it
+    // Also note that the original function `orig_func` will not be run in this case unless we explicitly call it
     true
 }
 
