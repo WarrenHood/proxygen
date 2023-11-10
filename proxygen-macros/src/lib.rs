@@ -38,7 +38,9 @@ pub fn proxy(_attrs: TokenStream, item: TokenStream) -> TokenStream {
     let ret_type = input.sig.output.clone();
     let orig_index_ident = syn::parse_str::<syn::Ident>(&format!("Index_{}", &func_name)).unwrap();
     let arg_types = input.sig.inputs.iter().map(GET_ARG_TYPES);
+    let attrs = input.attrs.into_iter().filter(|attr|!attr.path().is_ident("proxy"));
     TokenStream::from(quote!(
+        #(#attrs)*
         #func_sig {
             let orig_func: fn (#(#arg_types,)*) #ret_type = unsafe { std::mem::transmute(ORIGINAL_FUNCS[#orig_index_ident]) };
             #(#func_body)*
@@ -58,7 +60,9 @@ pub fn pre_hook(attrs: TokenStream, item: TokenStream) -> TokenStream {
     let func_sig = input.sig.clone();
     let func_body = input.block.stmts.clone();
     let arg_names = input.sig.inputs.iter().map(GET_ARG_NAMES);
+    let attrs = input.attrs.into_iter().filter(|attr|!attr.path().is_ident("pre_hook"));
     TokenStream::from(quote!(
+        #(#attrs)*
         #func_sig {
             #(#func_body)*
             orig_func(#(#arg_names,)*)
@@ -83,7 +87,10 @@ pub fn post_hook(_attrs: TokenStream, item: TokenStream) -> TokenStream {
     let orig_index_ident = syn::parse_str::<syn::Ident>(&format!("Index_{}", &func_name)).unwrap();
     let arg_names = input.sig.inputs.iter().map(GET_ARG_NAMES);
     let arg_types = input.sig.inputs.iter().map(GET_ARG_TYPES);
+    let attrs = input.attrs.into_iter().filter(|attr|!attr.path().is_ident("post_hook"));
+
     TokenStream::from(quote!(
+        #(#attrs)*
         #func_sig {
             let orig_func: fn (#(#arg_types,)*) #ret_type = unsafe { std::mem::transmute(ORIGINAL_FUNCS[#orig_index_ident]) };
             let orig_result = orig_func(#(#arg_names,)*);
