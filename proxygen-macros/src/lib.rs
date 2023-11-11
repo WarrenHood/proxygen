@@ -111,7 +111,7 @@ pub fn forward(_attr_input: TokenStream, item: TokenStream) -> TokenStream {
             #[naked]
             #(#attrs)*
             pub unsafe extern "C" fn #func_name() {
-                asm!(
+                std::arch::asm!(
                     "call {wait_dll_proxy_init}",
                     "mov rax, qword ptr [rip + {ORIG_FUNCS_PTR}]",
                     "add rax, {orig_index} * 8",
@@ -130,7 +130,7 @@ pub fn forward(_attr_input: TokenStream, item: TokenStream) -> TokenStream {
             #[naked]
             #(#attrs)*
             pub unsafe extern "C" fn #func_name() {
-                asm!(
+                std::arch::asm!(
                     "call {wait_dll_proxy_init}",
                     "mov eax, dword ptr [{ORIG_FUNCS_PTR}]",
                     "add eax, {orig_index} * 4",
