@@ -4,8 +4,8 @@
 use proxygen_macros::{proxy, pre_hook, post_hook};
 
 
-#[post_hook]
+#[pre_hook(sig = "unknown")]
 #[no_mangle]
-pub fn SomeTestFunction(steam_apps: usize, app_id: u32) -> bool {
+pub fn SomeTestFunction() {
     println!("This is a test!");
 }
