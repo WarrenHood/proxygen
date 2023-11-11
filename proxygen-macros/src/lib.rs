@@ -106,24 +106,47 @@ pub fn forward(_attr_input: TokenStream, item: TokenStream) -> TokenStream {
         panic!("Your function body will not get run in a forwarding proxy. Perhaps you meant to use a `pre_hook`?");
     }
 
-    TokenStream::from(quote!(
-        #[naked]
-        #(#attrs)*
-        pub unsafe extern "C" fn #func_name() {
-            asm!(
-                "call {wait_dll_proxy_init}",
-                "mov rax, qword ptr [rip + {ORIG_FUNCS_PTR}]",
-                "add rax, {orig_index} * 8",
-                "mov rax, qword ptr [rax]",
-                "push rax",
-                "ret",
-                wait_dll_proxy_init = sym crate::wait_dll_proxy_init,
-                ORIG_FUNCS_PTR = sym crate::ORIG_FUNCS_PTR,
-                orig_index = const #orig_index_ident,
-                options(noreturn)
-            )
-        }
-    ))
+    if cfg!(target_arch = "x86_64") {
+        TokenStream::from(quote!(
+            #[naked]
+            #(#attrs)*
+            pub unsafe extern "C" fn #func_name() {
+                asm!(
+                    "call {wait_dll_proxy_init}",
+                    "mov rax, qword ptr [rip + {ORIG_FUNCS_PTR}]",
+                    "add rax, {orig_index} * 8",
+                    "mov rax, qword ptr [rax]",
+                    "push rax",
+                    "ret",
+                    wait_dll_proxy_init = sym crate::wait_dll_proxy_init,
+                    ORIG_FUNCS_PTR = sym crate::ORIG_FUNCS_PTR,
+                    orig_index = const #orig_index_ident,
+                    options(noreturn)
+                )
+            }
+        ))
+    } else if cfg!(target_arch = "x86") {
+        TokenStream::from(quote!(
+            #[naked]
+            #(#attrs)*
+            pub unsafe extern "C" fn #func_name() {
+                asm!(
+                    "call {wait_dll_proxy_init}",
+                    "mov eax, dword ptr [{ORIG_FUNCS_PTR}]",
+                    "add eax, {orig_index} * 4",
+                    "mov eax, dword ptr [eax]",
+                    "push eax",
+                    "ret",
+                    wait_dll_proxy_init = sym crate::wait_dll_proxy_init,
+                    ORIG_FUNCS_PTR = crate::ORIG_FUNCS_PTR,
+                    orig_index = #orig_index_ident,
+                    options(noreturn)
+                );
+            }
+        ))
+    } else {
+        panic!("Unsupported target arch detected. Only x86_64 and x86 are supported")
+    }
 }
 
 // Proc macro to bring the original function into the scope of an interceptor function as `orig_func`
