@@ -15,7 +15,6 @@
 //     // and its result will be returned
 // }
 //
-//
 // #[proxy(sig="known")]
 // #[export_name="SomeFunction"]
 // pub extern "C" fn SomeFunction(some_arg_1: usize, some_arg_2: u32) -> bool {
