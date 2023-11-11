@@ -46,7 +46,7 @@ static mut ORIGINAL_FUNCS: [FARPROC; TOTAL_EXPORTS] = [std::ptr::null_mut(); TOT
 static mut ORIG_FUNCS_PTR: *const FARPROC = std::ptr::null_mut();
 
 /// Indicates once we are ready to accept incoming calls to proxied functions
-static mut {{ package_name }}_READY: bool = false;
+static mut PROXYGEN_READY: bool = false;
 
 #[no_mangle]
 pub unsafe extern "stdcall" fn DllMain(module: HMODULE, reason: u32, _res: *const c_void) -> i32 {
@@ -144,15 +144,28 @@ unsafe extern "system" fn init(_: *mut c_void) -> u32 {
         die();
     }
     load_dll_funcs();
-    {{ package_name }}_READY = true;
+    PROXYGEN_READY = true;
     0
 }
 
+/// Call this before attempting to call a function in the proxied DLL
+/// 
+/// This will wait for proxygen to fully load up all the proxied function addresses before returning
 #[no_mangle]
-pub unsafe extern "C" fn wait_dll_proxy_init() {
-    // Spin a little while we wait for all functions to fully load
+pub extern "C" fn wait_dll_proxy_init() {
     // NOTE TO SELF: DO NO PRINT STUFF IN HERE
-    while !{{ package_name }}_READY {
-        _mm_pause();
+    
+    // Safety: `PROXYGEN_READY` will only get flipped to true once, and never back again.
+    // We also check if sse2 is supported before using _mm_pause
+    if is_x86_feature_detected!("sse2") {
+        unsafe {
+            while !PROXYGEN_READY {
+                _mm_pause();
+            }
+        }
+    } else {
+        while !unsafe { PROXYGEN_READY } {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
     }
 }
