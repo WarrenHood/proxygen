@@ -30,19 +30,30 @@ Then build the project.
 ## Macros/hooks
 
 ```rust
-#[no_mangle]
+#[forward]
 #[export_name="SomeFunction"]
-#[pre_hook]
+pub extern "C" fn SomeFunction() {
+    // The call is forwarded directly to the original function
+    // Also note: we cannot place anything in the function body when forwarding the call this way
+}
+
+#[pre_hook(sig="known")]
+#[export_name="SomeFunction"]
 pub extern "C" fn SomeFunction(some_arg_1: usize, some_arg_2: u32) -> bool {
     println!("Pre-hooked SomeFunction. Args: {}, {}", some_arg_1, some_arg_2);
     // After all our code in this pre-hook runs, if we don't return, the original function will be called
     // and its result will be returned
 }
 
-
-#[no_mangle]
+#[pre_hook(sig="unknown")]
 #[export_name="SomeFunction"]
-#[proxy]
+pub extern "C" fn SomeFunction() {
+    println!("Pre-hooked SomeFunction. Unknown signature");
+    // The original function will then run afterwards
+}
+
+#[proxy(sig="known")]
+#[export_name="SomeFunction"]
 pub extern "C" fn SomeFunction(some_arg_1: usize, some_arg_2: u32) -> bool {
     let orig_result = orig_func(some_arg_1, some_arg_2);
     println!("Manually proxied SomeFunction. Args: {}, {}. Result: {}", some_arg_1, some_arg_2, orig_result);
@@ -52,9 +63,8 @@ pub extern "C" fn SomeFunction(some_arg_1: usize, some_arg_2: u32) -> bool {
 }
 
 
-#[no_mangle]
+#[post_hook(sig="known")]
 #[export_name="SomeFunction"]
-#[post_hook]
 pub extern "C" fn SomeFunction(some_arg_1: usize, some_arg_2: u32) -> bool {
     // `orig_func` got run just before our code. Its result is stored in `orig_result`
     println!("In post-hook for SomeFunction. Args: {}, {}. Result: {}", some_arg_1, some_arg_2, orig_result);
@@ -161,15 +171,13 @@ Assuming it has a `void*` (pointer sized type) followed by an `int` (32-bits usu
 We can proxy it by adding the following to `intercepted_exports.rs`:
 
 ```rust
-#[no_mangle]
+#[proxy(sig="known")]
 #[export_name = "_SomeMangledFunctionName@12"]
-pub unsafe extern "C" fn SomeFunctionName(
+pub extern "C" fn SomeFunctionName(
     some_arg_1: usize,
     some_arg_2: u32,
 ) -> bool {
-    let original_result: bool = std::mem::transmute::<FARPROC, fn(usize, u32) -> bool>(
-        ORIGINAL_FUNCS[Index_SomeFunctionName],
-    )(some_arg_1, some_arg_2);
+    let original_result: bool = orig_func(some_arg_1, some_arg_2);
     println!(
         "Proxied SomeFunctionName. Original result: {}. Returning true instead",
         original_result
