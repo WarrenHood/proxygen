@@ -24,6 +24,7 @@ use winapi::ctypes::c_void;
 use winapi::shared::minwindef::{FARPROC, HMODULE};
 use winapi::shared::ntdef::LPCSTR;
 use winapi::um::consoleapi::AllocConsole;
+use winapi::um::errhandlingapi::GetLastError;
 use winapi::um::libloaderapi::{
     DisableThreadLibraryCalls, FreeLibrary, GetModuleFileNameW, LoadLibraryA,
 };
@@ -139,7 +140,11 @@ unsafe extern "system" fn init(_: *mut c_void) -> u32 {
         }
         println!("Original DLL handle: {:?}", orig_dll_handle);
     } else {
-        show_message("{{ package_name }}", "Failed to load original DLL");
+        let err = GetLastError();
+        show_message(
+            "TRAILMAKERS_PROXY_TEST",
+            &format!("Failed to load original DLL. Error: {}", err),
+        );
         eprintln!("Failed to load original DLL");
         die();
     }
