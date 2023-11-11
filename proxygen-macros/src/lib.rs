@@ -92,6 +92,7 @@ pub fn proxy(attr_input: TokenStream, item: TokenStream) -> TokenStream {
             TokenStream::from(quote!(
                 #(#attrs)*
                 #func_sig {
+                    crate::wait_dll_proxy_init();
                     let orig_func: fn (#(#arg_types,)*) #ret_type = unsafe { std::mem::transmute(crate::ORIGINAL_FUNCS[#orig_index_ident]) };
                     #(#func_body)*
                 }
@@ -257,6 +258,7 @@ pub fn post_hook(attr_input: TokenStream, item: TokenStream) -> TokenStream {
         ProxySignatureType::Known => TokenStream::from(quote!(
             #(#attrs)*
             #func_sig {
+                crate::wait_dll_proxy_init();
                 let orig_func: fn (#(#arg_types,)*) #ret_type = unsafe { std::mem::transmute(crate::ORIGINAL_FUNCS[#orig_index_ident]) };
                 let orig_result = orig_func(#(#arg_names,)*);
                 #(#func_body)*
