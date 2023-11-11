@@ -65,6 +65,67 @@ impl From<syn::Meta> for ProxySignatureType {
     }
 }
 
+// Proc macro to forward a function call to the orginal function
+//
+// Note: You may not have any instructions in the function body when forwarding function calls
+#[proc_macro_attribute]
+pub fn forward(_attr_input: TokenStream, item: TokenStream) -> TokenStream {
+    let input: ItemFn = syn::parse(item).expect("You may only proxy a function");
+    let func_name = input.sig.clone().ident;
+    let func_body = input.block.stmts.clone();
+    let ret_type = input.sig.output.clone();
+    let orig_index_ident =
+        syn::parse_str::<syn::Path>(&format!("crate::export_indices::Index_{}", &func_name))
+            .unwrap();
+    let arg_types = input.sig.inputs.iter().map(GET_ARG_TYPES);
+    let attrs = input
+        .attrs
+        .into_iter()
+        .filter(|attr| !attr.path().is_ident("proxy"));
+
+    if arg_types.len() > 0 {
+        panic!("You may not specifiy arguments in a forwarding proxy");
+    }
+    match ret_type.clone() {
+        syn::ReturnType::Default => {}
+        syn::ReturnType::Type(_, ty) => match *ty {
+            syn::Type::Path(ref p) => {
+                if !p.path.is_ident("()") {
+                    panic!("You may not specify a return type when forwarding a function call");
+                }
+            }
+            syn::Type::Tuple(ref t) => {
+                if !t.elems.is_empty() {
+                    panic!("You may not specify a return type when forwarding a function call");
+                }
+            }
+            _ => panic!("You may not specify a return type when forwarding a function call"),
+        },
+    };
+    if func_body.len() > 0 {
+        panic!("Your function body will not get run in a forwarding proxy. Perhaps you meant to use a `pre_hook`?");
+    }
+
+    TokenStream::from(quote!(
+        #[naked]
+        #(#attrs)*
+        pub unsafe extern "C" fn #func_name() {
+            asm!(
+                "call {wait_dll_proxy_init}",
+                "mov rax, qword ptr [rip + {ORIG_FUNCS_PTR}]",
+                "add rax, {orig_index} * 8",
+                "mov rax, qword ptr [rax]",
+                "push rax",
+                "ret",
+                wait_dll_proxy_init = sym crate::wait_dll_proxy_init,
+                ORIG_FUNCS_PTR = sym crate::ORIG_FUNCS_PTR,
+                orig_index = const #orig_index_ident,
+                options(noreturn)
+            )
+        }
+    ))
+}
+
 // Proc macro to bring the original function into the scope of an interceptor function as `orig_func`
 #[proc_macro_attribute]
 pub fn proxy(attr_input: TokenStream, item: TokenStream) -> TokenStream {
