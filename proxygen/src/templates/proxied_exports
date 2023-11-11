@@ -1,6 +1,4 @@
 // Just proxied functions in this file
-use crate::export_indices::*;
-use crate::{ORIG_FUNCS_PTR, wait_dll_proxy_init};
-use std::arch::asm;
+use proxygen_macros::forward;
 
 {{ proxy_exports }}

@@ -92,23 +92,6 @@ impl ProxyTemplates {
         Ok(self.tera.render("orig_exports.rs", &ctx)?)
     }
 
-    // pub fn get_module_def(
-    //     &self,
-    //     exports: &BTreeSet<ExportName>,
-    //     dll_name: impl Into<String>,
-    // ) -> Result<String> {
-    //     let mut ctx = Context::new();
-    //     let def_exports: String = exports
-    //         .iter()
-    //         .map(|export_name| format!(r#"{}={}"#, export_name.original, export_name.cleaned))
-    //         .fold(String::new(), |acc, x| acc + "\n" + &x)
-    //         .trim_start()
-    //         .into();
-    //     ctx.insert("exports", &def_exports);
-    //     ctx.insert("dll_name", &dll_name.into());
-    //     Ok(self.tera.render("module.def", &ctx)?)
-    // }
-
     pub fn get_proxied_exports(
         &self,
         exports: &BTreeSet<ExportName>,
@@ -120,44 +103,7 @@ impl ProxyTemplates {
             .filter(|x| !exclusions.contains(&x.cleaned))
             .map(|export_name| {
                 format!(
-                    r#"#[cfg(target_arch="x86_64")]
-#[no_mangle]
-#[naked]
-#[export_name="{1}"]
-pub unsafe extern "C" fn {0}() {{
-    asm!(
-        "call {{wait_dll_proxy_init}}",
-        "mov rax, qword ptr [rip + {{ORIG_FUNCS_PTR}}]",
-        "add rax, {{orig_index}} * 8",
-        "mov rax, qword ptr [rax]",
-        "push rax",
-        "ret",
-        wait_dll_proxy_init = sym wait_dll_proxy_init,
-        ORIG_FUNCS_PTR = sym ORIG_FUNCS_PTR,
-        orig_index = const Index_{0},
-        options(noreturn)
-    );
-}}
-
-#[cfg(target_arch="x86")]
-#[no_mangle]
-#[naked]
-#[export_name="{1}"]
-pub unsafe extern "C" fn {0}() {{
-    asm!(
-        "call {{wait_dll_proxy_init}}",
-        "mov eax, dword ptr [{{ORIG_FUNCS_PTR}}]",
-        "add eax, {{orig_index}} * 4",
-        "mov eax, dword ptr [eax]",
-        "push eax",
-        "ret",
-        wait_dll_proxy_init = sym wait_dll_proxy_init,
-        ORIG_FUNCS_PTR = sym ORIG_FUNCS_PTR,
-        orig_index = const Index_{0},
-        options(noreturn)
-    );
-}}
-"#,
+                    "#[forward]\n#[export_name=\"{1}\"]\npub extern \"C\" fn {0}() {{}}\n",
                     export_name.cleaned, export_name.original
                 )
             })
