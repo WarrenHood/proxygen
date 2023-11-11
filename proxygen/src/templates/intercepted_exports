@@ -7,9 +7,8 @@
 // NOTE: Use the correct arg types and return type for any functions you proxy, or else you will probably mess up the stack
 //       and you will probably crash whatever program the DLL is loaded into
 //
-// #[no_mangle]
+// #[pre_hook(sig="known")]
 // #[export_name="SomeFunction"]
-// #[pre_hook]
 // pub extern "C" fn SomeFunction(some_arg_1: usize, some_arg_2: u32) -> bool {
 //     println!("Pre-hooked SomeFunction. Args: {}, {}", some_arg_1, some_arg_2);
 //     // After all our code in this pre-hook runs, if we don't return, the original function will be called
@@ -17,9 +16,8 @@
 // }
 //
 //
-// #[no_mangle]
+// #[proxy(sig="known")]
 // #[export_name="SomeFunction"]
-// #[proxy]
 // pub extern "C" fn SomeFunction(some_arg_1: usize, some_arg_2: u32) -> bool {
 //     let orig_result = orig_func(some_arg_1, some_arg_2);
 //     println!("Manually proxied SomeFunction. Args: {}, {}. Result: {}", some_arg_1, some_arg_2, orig_result);
@@ -28,18 +26,20 @@
 //     true
 // }
 //
-//
-// #[no_mangle]
+// #[post_hook(sig="known")]
 // #[export_name="SomeFunction"]
-// #[post_hook]
 // pub extern "C" fn SomeFunction(some_arg_1: usize, some_arg_2: u32) -> bool {
 //     // `orig_func` got run just before our code. Its result is stored in `orig_result`
 //     println!("In post-hook for SomeFunction. Args: {}, {}. Result: {}", some_arg_1, some_arg_2, orig_result);
 //     // We could manually return something here if we didn't want `orig_result` returned
 // }
+//
+// #[pre_hook(sig="unknown")]
+// #[export_name="SomeFunction"]
+// pub extern "C" fn SomeFunction() {
+//     println!("In pre-hook for SomeFunction. (signature unknown)")
+// }
 
 #![allow(unused_imports)]
-use crate::{export_indices::*, wait_dll_proxy_init, ORIGINAL_FUNCS, ORIG_FUNCS_PTR};
-use proxygen_macros::{post_hook, pre_hook, proxy};
-use std::arch::asm;
-use winapi::shared::minwindef::FARPROC;
+use proxygen_macros::{post_hook, pre_hook, proxy, forward};
+
