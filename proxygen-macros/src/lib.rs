@@ -110,7 +110,7 @@ pub fn forward(_attr_input: TokenStream, item: TokenStream) -> TokenStream {
         #[naked]
         #(#attrs)*
         pub unsafe extern "C" fn #func_name() {
-            #[cfg(target_arch = "x86_64")] 
+            #[cfg(target_arch = "x86_64")]
             {
                 std::arch::asm!(
                     "call {wait_dll_proxy_init}",
@@ -126,7 +126,7 @@ pub fn forward(_attr_input: TokenStream, item: TokenStream) -> TokenStream {
                 )
             }
 
-            #[cfg(target_arch = "x86")] 
+            #[cfg(target_arch = "x86")]
             {
                 std::arch::asm!(
                     "call {wait_dll_proxy_init}",
@@ -221,88 +221,82 @@ pub fn pre_hook(attr_input: TokenStream, item: TokenStream) -> TokenStream {
             }
         )),
         ProxySignatureType::Unknown => {
-            if cfg!(target_arch = "x86_64") {
-                if arg_names.clone().len() != 0 {
-                    panic!("You may not specifiy any arguments when proxying a function with an unknown signature");
-                }
-                match ret_type.clone() {
-                    syn::ReturnType::Default => {},
-                    syn::ReturnType::Type(_, ty) => {
-                        match *ty {
-                            syn::Type::Path(ref p) => if !p.path.is_ident("()") {
-                                panic!("You may not specify a return type when proxying a function with an unknown signature");
-                            },
-                            syn::Type::Tuple(ref t) => if !t.elems.is_empty() {
-                                panic!("You may not specify a return type when proxying a function with an unknown signature");
-                            },
-                            _ => panic!("You may not specify a return type when proxying a function with an unknown signature")
-                        }
-                    }
-                };
-                let hook_func_name =
-                    syn::parse_str::<syn::Ident>(&format!("Proxygen_PreHook_{}", &func_name))
-                        .unwrap();
-                TokenStream::from(quote!(
-                    #[no_mangle]
-                    // TODO: Use the same safety/unsafety modifier as the original here
-                    pub unsafe extern "C" fn #hook_func_name() {
-                        let orig_func: fn () = std::mem::transmute(crate::ORIGINAL_FUNCS[#orig_index_ident]);
-                        #(#func_body)*
-                    }
-
-                    #[naked]
-                    #(#attrs)*
-                    pub unsafe extern "C" fn #func_name() {
-                        std::arch::asm!(
-                            // Wait for dll proxy to initialize
-                            "call {wait_dll_proxy_init}",
-                            "mov rax, qword ptr [rip + {ORIG_FUNCS_PTR}]",
-                            "add rax, {orig_index} * 8",
-                            "mov rax, qword ptr [rax]",
-
-                            // Push the original function onto the stack
-                            "push rax",
-
-                            // Save the general purpose registers
-                            "push rdi; push rsi; push rcx; push rdx; push r8; push r9",
-
-                            // Save the 128-bit floating point registers
-                            "sub rsp, 64",
-                            "movaps [rsp], xmm0",
-                            "movaps [rsp + 16], xmm1",
-                            "movaps [rsp + 32], xmm2",
-                            "movaps [rsp + 48], xmm3",
-
-                            // Call our hook code here
-                            "call {proxygen_pre_hook_func}",
-
-                            // Restore the 128-bit floating point registers
-                            "movaps xmm3, [rsp + 48]",
-                            "movaps xmm2, [rsp + 32]",
-                            "movaps xmm1, [rsp + 16]",
-                            "movaps xmm0, [rsp]",
-                            "add rsp, 64",
-
-                            // Restore the general purpose registers
-                            "pop r9; pop r8; pop rdx; pop rcx; pop rsi; pop rdi",
-
-                            // Return to the original function
-                            "ret",
-                            wait_dll_proxy_init = sym crate::wait_dll_proxy_init,
-                            ORIG_FUNCS_PTR = sym crate::ORIG_FUNCS_PTR,
-                            orig_index = const #orig_index_ident,
-                            proxygen_pre_hook_func = sym #hook_func_name,
-                            options(noreturn)
-                        );
-                    }
-                ))
-            } else if cfg!(target_arch = "x86") {
-                TokenStream::from(quote!(panic!(
-                    "Pre-hooking an x86 function with unknown signature is not yet implemented"
-                )))
-            } else {
-                panic!("Unsupported target arch detected. Only x86_64 and x86 are supported")
+            if arg_names.clone().len() != 0 {
+                panic!("You may not specifiy any arguments when proxying a function with an unknown signature");
             }
+            match ret_type.clone() {
+                syn::ReturnType::Default => {},
+                syn::ReturnType::Type(_, ty) => {
+                    match *ty {
+                        syn::Type::Path(ref p) => if !p.path.is_ident("()") {
+                            panic!("You may not specify a return type when proxying a function with an unknown signature");
+                        },
+                        syn::Type::Tuple(ref t) => if !t.elems.is_empty() {
+                            panic!("You may not specify a return type when proxying a function with an unknown signature");
+                        },
+                        _ => panic!("You may not specify a return type when proxying a function with an unknown signature")
+                    }
+                }
+            };
+            let hook_func_name =
+                syn::parse_str::<syn::Ident>(&format!("Proxygen_PreHook_{}", &func_name)).unwrap();
+            TokenStream::from(quote!(
+                #[cfg(not(target_arch = "x86_64"))]
+                compile_error!("Pre-hooks aren't yet implemented for non x86-64");
+
+                #[no_mangle]
+                // TODO: Use the same safety/unsafety modifier as the original here
+                pub unsafe extern "C" fn #hook_func_name() {
+                    let orig_func: fn () = std::mem::transmute(crate::ORIGINAL_FUNCS[#orig_index_ident]);
+                    #(#func_body)*
+                }
+
+                #[naked]
+                #(#attrs)*
+                pub unsafe extern "C" fn #func_name() {
+                    std::arch::asm!(
+                        // Wait for dll proxy to initialize
+                        "call {wait_dll_proxy_init}",
+                        "mov rax, qword ptr [rip + {ORIG_FUNCS_PTR}]",
+                        "add rax, {orig_index} * 8",
+                        "mov rax, qword ptr [rax]",
+
+                        // Push the original function onto the stack
+                        "push rax",
+
+                        // Save the general purpose registers
+                        "push rdi; push rsi; push rcx; push rdx; push r8; push r9",
+
+                        // Save the 128-bit floating point registers
+                        "sub rsp, 64",
+                        "movaps [rsp], xmm0",
+                        "movaps [rsp + 16], xmm1",
+                        "movaps [rsp + 32], xmm2",
+                        "movaps [rsp + 48], xmm3",
+
+                        // Call our hook code here
+                        "call {proxygen_pre_hook_func}",
+
+                        // Restore the 128-bit floating point registers
+                        "movaps xmm3, [rsp + 48]",
+                        "movaps xmm2, [rsp + 32]",
+                        "movaps xmm1, [rsp + 16]",
+                        "movaps xmm0, [rsp]",
+                        "add rsp, 64",
+
+                        // Restore the general purpose registers
+                        "pop r9; pop r8; pop rdx; pop rcx; pop rsi; pop rdi",
+
+                        // Return to the original function
+                        "ret",
+                        wait_dll_proxy_init = sym crate::wait_dll_proxy_init,
+                        ORIG_FUNCS_PTR = sym crate::ORIG_FUNCS_PTR,
+                        orig_index = const #orig_index_ident,
+                        proxygen_pre_hook_func = sym #hook_func_name,
+                        options(noreturn)
+                    );
+                }
+            ))
         }
     }
 }
