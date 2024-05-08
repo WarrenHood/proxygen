@@ -2,11 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.5.1] - 2024-05-08
+
+### Bug Fixes
+
+- Fixed an issue where loading the original DLL would sometimes fail
+- Function pre-hooking now respects target_arch
+- Function forwarding now respects target_arch (Credits to @RinLovesYou)
 
 ### Miscellaneous Tasks
 
 - Add default `git-cliff` config
+- Added changelog
+- Bump up version to 0.5.1
 
 ## [0.5.0] - 2023-11-11
 
