@@ -49,6 +49,10 @@ static mut ORIG_FUNCS_PTR: *const FARPROC = std::ptr::null_mut();
 /// Indicates once we are ready to accept incoming calls to proxied functions
 static mut PROXYGEN_READY: bool = false;
 
+// Max path length is 32767
+//https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
+const STRING_BUFF_SIZE: usize = 32767;
+
 #[no_mangle]
 pub unsafe extern "stdcall" fn DllMain(module: HMODULE, reason: u32, _res: *const c_void) -> i32 {
     DisableThreadLibraryCalls(module);
@@ -75,7 +79,7 @@ pub unsafe extern "stdcall" fn DllMain(module: HMODULE, reason: u32, _res: *cons
 
 /// Get the current DLLs path
 unsafe fn get_dll_path() -> Option<String> {
-    let mut buffer: Vec<u16> = vec![0; 260];
+    let mut buffer: Vec<u16> = vec![0; STRING_BUFF_SIZE];
     if THIS_HANDLE.is_none() {
         return None;
     }
@@ -125,7 +129,7 @@ unsafe extern "system" fn init(_: *mut c_void) -> u32 {
     SetStdHandle(STD_ERROR_HANDLE, err_handle);
     if let Some(dll_path) = get_dll_path() {
         println!("This DLL path: {}", &dll_path);
-        let orig_dll_name = format!("{}_", &dll_path);
+        let orig_dll_name = format!("{}_\0", &dll_path);
         ORIG_DLL_HANDLE = Some(LoadLibraryA(orig_dll_name.as_ptr() as *const i8));
     } else {
         show_message("{{ package_name }}", "Failed to get DLL path");
@@ -134,18 +138,22 @@ unsafe extern "system" fn init(_: *mut c_void) -> u32 {
     }
     if let Some(orig_dll_handle) = ORIG_DLL_HANDLE {
         if orig_dll_handle.is_null() {
-            show_message("{{ package_name }}", "Failed to load original DLL");
+            let err = GetLastError();
             eprintln!("Failed to load original DLL");
+            show_message(
+                "{{ package_name }}",
+                &format!("Failed to load original DLL. Error: {}", err),
+            );
             die();
         }
         println!("Original DLL handle: {:?}", orig_dll_handle);
     } else {
         let err = GetLastError();
+        eprintln!("Failed to load original DLL");
         show_message(
-            "TRAILMAKERS_PROXY_TEST",
+            "{{ package_name }}",
             &format!("Failed to load original DLL. Error: {}", err),
         );
-        eprintln!("Failed to load original DLL");
         die();
     }
     load_dll_funcs();
